@@ -1,0 +1,60 @@
+Instancia EC2
+
+cat << 'EOF' > receptor.py
+from flask import Flask, jsonify
+import time
+import threading
+
+app = Flask(__name__)
+
+# Estado global sincronizado
+estado_telemetria = {
+    "nivel_estanque": 63.0,
+    "cloro_ppm": 1.35,
+    "alarma": "NORMAL",
+    "bomba": "APAGADA"
+}
+
+def simular_plc_fiel():
+    """Bucle sincronizado a 5 segundos para coincidir exactamente con el refresco de Grafana"""
+    nivel = 63.0
+    subiendo = True
+
+    while True:
+        # Simulación de llenado y vaciado del estanque
+        if subiendo:
+            nivel += 2.0
+            if nivel >= 87.0:
+                subiendo = False
+        else:
+            nivel -= 2.0
+            if nivel <= 35.0:
+                subiendo = True
+
+        # Cálculo de cloro y estado de bomba proporcional
+        cloro = round(0.02 * nivel + 0.09, 2)
+        bomba = "ENCENDIDA" if nivel < 80.0 else "APAGADA"
+
+        # Actualización del diccionario global que consulta Flask
+        estado_telemetria["nivel_estanque"] = round(nivel, 1)
+        estado_telemetria["cloro_ppm"] = cloro
+        estado_telemetria["bomba"] = bomba
+
+        # Salida por consola sincronizada
+        print(f"[PLC-CENTRAL] Nivel: {estado_telemetria['nivel_estanque']}% | Cloro: {estado_telemetria['cloro_ppm']}ppm | Alarma: NORMAL | Bomba: {estado_telemetria['bomba']}")
+
+        # Espera de 5 segundos exacta para alinearse con Grafana
+        time.sleep(5)
+
+@app.route("/")
+def obtener_telemetria():
+    return jsonify(estado_telemetria)
+
+if __name__ == "__main__":
+    # Inicia la simulación del PLC en segundo plano
+    hilo = threading.Thread(target=simular_plc_fiel, daemon=True)
+    hilo.start()
+
+    # Servidor accesible para Grafana en el puerto 5000
+    app.run(host="0.0.0.0", port=5000)
+EOF
