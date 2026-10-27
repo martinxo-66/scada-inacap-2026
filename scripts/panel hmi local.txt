@@ -1,6 +1,5 @@
 panel-hmi-local
 
-cat << 'EOF' > /panel_hmi.py
 import urllib.request
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -53,15 +52,3 @@ if __name__ == '__main__':
     PORT = 8080
     print(f"[PANEL-HMI] Servidor web HMI activo en puerto {PORT}...")
     HTTPServer(("0.0.0.0", PORT), HMIHandler).serve_forever()
-EOF
-
-pkill -9 -f python3
-python3 -u /panel_hmi.py
-
-
-auto eth0
-iface eth0 inet static
-    address 192.168.1.50
-    netmask 255.255.255.0
-    gateway 192.168.1.1
-    up echo nameserver 192.168.1.1 > /etc/resolv.conf

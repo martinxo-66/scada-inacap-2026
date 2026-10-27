@@ -1,6 +1,5 @@
 Actuador bomba agua
 
-cat << 'EOF' > /actuador.py
 import json
 import urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -19,7 +18,6 @@ class ActuadorHandler(BaseHTTPRequestHandler):
             bomba = data.get("bomba", "APAGADA")
             print(f"[ACTUADOR] Orden recibida del PLC -> Bomba: {bomba}")
             
-            # Reenviar el estado de la bomba al Estanque (192.168.1.10:5001) para que el nivel suba
             req_estanque = urllib.request.Request(
                 "http://192.168.1.10:5001",
                 data=json.dumps({"bomba": bomba}).encode('utf-8'),
@@ -54,14 +52,3 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         server.server_close()
-EOF
-
-pkill -9 -f python3
-python3 -u /actuador.py
-
-auto eth0
-iface eth0 inet static
-    address 192.168.1.25
-    netmask 255.255.255.0
-    gateway 192.168.1.1
-    up echo nameserver 192.168.1.1 > /etc/resolv.conf

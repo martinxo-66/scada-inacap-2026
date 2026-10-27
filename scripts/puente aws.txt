@@ -1,33 +1,16 @@
 puente aws
 
-cat << 'EOF' > /puente_aws.py
 import time
 import urllib.request
 import json
 
 while True:
     try:
-        # Consulta el estado actual al PLC Central
         with urllib.request.urlopen("http://192.168.1.20:5000", timeout=3) as resp:
             data = json.loads(resp.read().decode('utf-8'))
         
-        # Simulación de envío de telemetría hacia instancia AWS Cloud / Grafana
         print(f"[PUENTE-AWS] Sincronizando telemetría OT con la nube -> Nivel: {data.get('nivel_estanque')}% | Cloro: {data.get('cloro_ppm')}ppm | Alarma: {data.get('alarma')}")
-        # Aquí iría el cliente MQTT/HTTP hacia AWS EC2
     except Exception as e:
         print("[PUENTE-AWS] Error de enlace con red local OT:", e)
     
     time.sleep(5)
-EOF
-
-
-pkill -9 -f python3
-python3 -u /puente_aws.py
-
-
-auto eth0
-iface eth0 inet static
-    address 192.168.4.10
-    netmask 255.255.255.0
-    gateway 192.168.4.1
-    up echo nameserver 8.8.8.8 > /etc/resolv.conf

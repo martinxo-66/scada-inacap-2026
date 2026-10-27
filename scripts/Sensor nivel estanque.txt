@@ -1,17 +1,14 @@
 Sensor nivel estanque
 
-cat << 'EOF' > /sensor_n.py
 import time
 import urllib.request
 import json
 
 while True:
     try:
-        # Consulta física al estanque correcto (192.168.1.10)
         with urllib.request.urlopen("http://192.168.1.10:5001", timeout=3) as resp:
             data = json.loads(resp.read().decode('utf-8'))
 
-        # Enviar al PLC Central (192.168.1.20)
         req = urllib.request.Request(
             "http://192.168.1.20:5000",
             data=json.dumps(data).encode('utf-8'),
@@ -22,16 +19,3 @@ while True:
     except Exception as e:
         print("Error en sensor:", e)
     time.sleep(3)
-EOF
-
-pkill -9 -f python3
-python3 -u /sensor_n.py
-
-
-
-auto eth0
-iface eth0 inet static
-    address 192.168.1.15
-    netmask 255.255.255.0
-    gateway 192.168.1.1
-    up echo nameserver 192.168.1.1 > /etc/resolv.conf

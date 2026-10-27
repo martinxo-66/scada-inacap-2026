@@ -1,6 +1,5 @@
 sonda-ids
 
-cat << 'EOF' > /sonda_ids.py
 import time
 import urllib.request
 import json
@@ -9,7 +8,6 @@ print("[SONDA-IDS] Sistema de Detección de Intrusos OT activo y monitoreando tr
 
 while True:
     try:
-        # Monitoreo pasivo consultando al PLC para verificar anomalías de seguridad
         with urllib.request.urlopen("http://192.168.1.20:5000", timeout=3) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             
@@ -22,15 +20,3 @@ while True:
         print("[SONDA-IDS] Advertencia: Pérdida temporal de visibilidad en el bus de red:", e)
         
     time.sleep(4)
-EOF
-
-pkill -9 -f python3
-python3 -u /sonda_ids.py
-
-
-auto eth0
-iface eth0 inet static
-    address 192.168.1.80
-    netmask 255.255.255.0
-    gateway 192.168.1.1
-    up echo nameserver 192.168.1.1 > /etc/resolv.conf

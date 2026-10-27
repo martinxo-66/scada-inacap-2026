@@ -1,7 +1,6 @@
 plc-central
 
 
-cat << 'EOF' > /plc.py
 import json, urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -15,13 +14,11 @@ class H(BaseHTTPRequestHandler):
             niv = H.mem.get("nivel_estanque", 50.0)
             clo = H.mem.get("cloro_ppm", 1.8)
             
-            # Gestión de Alarma de Seguridad
             if niv < 20.0 or niv > 90.0 or clo < 0.2 or clo > 4.0:
                 H.mem["alarma"] = "CRITICA"
             else:
                 H.mem["alarma"] = "NORMAL"
 
-            # Lógica de Control Histerética corregida para autorizar recuperación
             if niv < 30.0:
                 H.mem["bomba"] = "ENCENDIDA"
             elif niv > 85.0:
@@ -43,14 +40,3 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, format, *args): return
 
 HTTPServer(("0.0.0.0", 5000), H).serve_forever()
-EOF
-pkill -9 -f python3
-python3 -u /plc.py
-
-IPV4: 
-auto eth0
-iface eth0 inet static
-    address 192.168.1.20
-    netmask 255.255.255.0
-    gateway 192.168.1.1
-    up echo nameserver 192.168.1.1 > /etc/resolv.conf
