@@ -1,0 +1,47 @@
+broker-mqtt
+
+cat << 'EOF' > /broker_simple.py
+import socket
+import threading
+
+HOST = '0.0.0.0'
+PORT = 1883
+
+def handle_client(conn, addr):
+    try:
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            print(f"[BROKER-MQTT] Recibido de {addr}: {data.decode('utf-8', errors='ignore')}")
+            # Acuse de recibo básico o eco
+            conn.sendall(b'{"status": "ack"}')
+    except Exception as e:
+        pass
+    finally:
+        conn.close()
+
+def run_broker():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind((HOST, PORT))
+    server.listen(5)
+    print(f"[BROKER-MQTT PYTHON] Servidor activo escuchando en puerto {PORT}...")
+    
+    while True:
+        conn, addr = server.accept()
+        threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+
+if __name__ == '__main__':
+    run_broker()
+EOF
+
+pkill -9 -f python3
+python3 -u /broker_simple.py
+
+auto eth0
+iface eth0 inet static
+    address 192.168.1.70
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up echo nameserver 192.168.1.1 > /etc/resolv.conf

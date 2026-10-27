@@ -1,0 +1,56 @@
+plc-central
+
+
+cat << 'EOF' > /plc.py
+import json, urllib.request
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class H(BaseHTTPRequestHandler):
+    mem = {"nivel_estanque": 50.0, "cloro_ppm": 1.8, "bomba": "APAGADA", "alarma": "NORMAL"}
+    def do_POST(self):
+        sz = int(self.headers.get("Content-Length", 0))
+        try:
+            p = json.loads(self.rfile.read(sz).decode())
+            H.mem.update(p)
+            niv = H.mem.get("nivel_estanque", 50.0)
+            clo = H.mem.get("cloro_ppm", 1.8)
+            
+            # Gestión de Alarma de Seguridad
+            if niv < 20.0 or niv > 90.0 or clo < 0.2 or clo > 4.0:
+                H.mem["alarma"] = "CRITICA"
+            else:
+                H.mem["alarma"] = "NORMAL"
+
+            # Lógica de Control Histerética corregida para autorizar recuperación
+            if niv < 30.0:
+                H.mem["bomba"] = "ENCENDIDA"
+            elif niv > 85.0:
+                H.mem["bomba"] = "APAGADA"
+            
+            print("[PLC-CENTRAL] Nivel: {}% | Cloro: {}ppm | Alarma: {} | Bomba: {}".format(niv, clo, H.mem["alarma"], H.mem["bomba"]))
+            
+            req = urllib.request.Request("http://192.168.1.25:5002", data=json.dumps({"bomba": H.mem["bomba"]}).encode(), headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=3)
+        except Exception as e:
+            print("[PLC-CENTRAL] Error:", e)
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(json.dumps(H.mem).encode())
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(json.dumps(H.mem).encode())
+    def log_message(self, format, *args): return
+
+HTTPServer(("0.0.0.0", 5000), H).serve_forever()
+EOF
+pkill -9 -f python3
+python3 -u /plc.py
+
+IPV4: 
+auto eth0
+iface eth0 inet static
+    address 192.168.1.20
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up echo nameserver 192.168.1.1 > /etc/resolv.conf

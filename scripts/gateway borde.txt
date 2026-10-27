@@ -1,0 +1,31 @@
+gateway-borde
+
+
+ip addr flush dev eth0
+ip addr add 192.168.20.25/24 dev eth0
+ip route add default via 192.168.20.1 dev eth0 2>/dev/null || true
+cat << 'EOF' > /gateway.py
+import time, urllib.request, socket, json
+
+while True:
+    try:
+        req = urllib.request.Request("http://192.168.10.20:5000", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            payload = r.read().decode()
+            print("[GATEWAY] Polling al PLC exitoso. Enviando a MQTT...")
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('192.168.10.18', 1883))
+            s.sendall(payload.encode())
+            s.close()
+    except Exception as e:
+        print("[GATEWAY] Error:", e)
+    time.sleep(5)
+EOF
+python3 /gateway.py &
+
+auto eth0
+iface eth0 inet static
+    address 192.168.1.60
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up echo nameserver 192.168.1.1 > /etc/resolv.conf

@@ -1,0 +1,80 @@
+"Estanque de agua"
+
+cat << 'EOF' > /estanque.py
+import time
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+# Variables físicas del proceso
+nivel = 10.0
+cloro = 1.5
+bomba_estado = "APAGADA"
+
+def simular_fisica():
+    global nivel, cloro, bomba_estado
+    while True:
+        if bomba_estado == "ENCENDIDA":
+            nivel += 2.0  # Sube el nivel si la bomba está activa
+            if nivel > 100.0:
+                nivel = 100.0
+            # El cloro se regula hacia un valor óptimo al bombear
+            if cloro < 1.8:
+                cloro += 0.05
+        else:
+            nivel -= 1.0  # Baja el nivel por consumo normal
+            if nivel < 0.0:
+                nivel = 0.0
+            # El cloro baja lentamente si no hay inyección
+            if cloro > 0.4:
+                cloro -= 0.02
+                
+        cloro = round(cloro, 2)
+        time.sleep(2)
+
+class EstanqueHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        global nivel, cloro, bomba_estado
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        data = {
+            "nivel_estanque": round(nivel, 2),
+            "cloro_ppm": cloro,
+            "bomba_estado": bomba_estado
+        }
+        self.wfile.write(json.dumps(data).encode('utf-8'))
+        print(f"[ESTANQUE] Nivel: {nivel:.2f}% | Cloro: {cloro} ppm | Bomba: {bomba_estado}")
+
+    def do_POST(self):
+        global bomba_estado
+        sz = int(self.headers.get("Content-Length", 0))
+        data = json.loads(self.rfile.read(sz).decode('utf-8'))
+        bomba_estado = data.get("bomba", "APAGADA")
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'{"status": "ok"}')
+
+    def log_message(self, format, *args):
+        return
+
+if __name__ == '__main__':
+    # Hilo en segundo plano para actualizar la física del agua y cloro
+    threading.Thread(target=simular_fisica, daemon=True).start()
+    
+    PORT = 5001
+    print(f"[ESTANQUE] Simulación física con lazos y cloro activa en puerto {PORT}...")
+    HTTPServer(("0.0.0.0", PORT), EstanqueHandler).serve_forever()
+EOF
+
+
+pkill -9 -f python3
+python3 -u /estanque.py
+
+IPV4:
+auto eth0
+iface eth0 inet static
+    address 192.168.1.10
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up echo nameserver 192.168.1.1 > /etc/resolv.conf

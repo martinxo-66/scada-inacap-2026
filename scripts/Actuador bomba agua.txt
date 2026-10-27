@@ -1,0 +1,67 @@
+Actuador bomba agua
+
+cat << 'EOF' > /actuador.py
+import json
+import urllib.request
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import socketserver
+
+class ReusableServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+class ActuadorHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            bomba = data.get("bomba", "APAGADA")
+            print(f"[ACTUADOR] Orden recibida del PLC -> Bomba: {bomba}")
+            
+            # Reenviar el estado de la bomba al Estanque (192.168.1.10:5001) para que el nivel suba
+            req_estanque = urllib.request.Request(
+                "http://192.168.1.10:5001",
+                data=json.dumps({"bomba": bomba}).encode('utf-8'),
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            urllib.request.urlopen(req_estanque, timeout=2)
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status": "ok", "mensaje": "Comando aplicado y sincronizado con estanque"}')
+        except Exception as e:
+            print("[ACTUADOR] Error procesando o sincronizando orden:", e)
+            self.send_response(500)
+            self.end_headers()
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{"estado_bomba": "activo"}')
+
+    def log_message(self, format, *args):
+        return
+
+if __name__ == '__main__':
+    PORT = 5002
+    server = ReusableServer(("0.0.0.0", PORT), ActuadorHandler)
+    print(f"[ACTUADOR] Activo y escuchando en puerto {PORT}...")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.server_close()
+EOF
+
+pkill -9 -f python3
+python3 -u /actuador.py
+
+auto eth0
+iface eth0 inet static
+    address 192.168.1.25
+    netmask 255.255.255.0
+    gateway 192.168.1.1
+    up echo nameserver 192.168.1.1 > /etc/resolv.conf
