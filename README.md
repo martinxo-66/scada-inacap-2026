@@ -24,5 +24,5 @@ Este repositorio contiene el diseño, configuración y simulación de una arquit
 * **`ec2/`** - Configuración e integración con servicios en la nube (AWS) para telemetría.
 
 ---
-**Autor:** Martín Ariel Vásquez Márquez  
+**Autores:** Martín Ariel Vásquez Márquez & Prof. Giovanny Herrera  
 **Institución:** INACAP — Ingeniería en Telecomunicaciones, Conectividad y Redes (2026)
