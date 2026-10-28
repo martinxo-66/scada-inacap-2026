@@ -1,0 +1,28 @@
+SW-DMZ
+
+
+configure terminal
+hostname SW-DMZ
+
+vlan 30
+ name ZONA-DMZ
+exit
+
+no ip http server
+no ip http secure-server
+
+interface GigabitEthernet0/0
+ description UPLINK-FORTIGATE-Port4
+ switchport access vlan 30
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ description PUENTE-AWS-1
+ switchport access vlan 30
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit

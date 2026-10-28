@@ -1,0 +1,70 @@
+SW SUPERVISION
+
+
+configure terminal
+hostname SW-SUPERVISION
+
+vlan 20
+ name ZONA-SUPERVISION
+exit
+
+no ip http server
+no ip http secure-server
+
+interface GigabitEthernet0/0
+ description UPLINK-FORTIGATE-Port3
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ description PANEL-HMI-LOCAL-1
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ description GATEWAY-BORDE-1
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface GigabitEthernet0/3
+ description BROKER-MQTT-1
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface GigabitEthernet1/0
+ description SONDA-IDS-1-SPAN-DESTINATION
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+ no shutdown
+exit
+
+monitor session 1 source interface GigabitEthernet0/0
+monitor session 1 destination interface GigabitEthernet1/0
+
+interface range GigabitEthernet1/1 - 1/3
+ shutdown
+exit
+
+interface range GigabitEthernet2/0 - 2/3
+ shutdown
+exit
+
+interface range GigabitEthernet3/0 - 3/3
+ shutdown
+exit
+
+end
+write memory

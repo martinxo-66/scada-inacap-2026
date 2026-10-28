@@ -1,0 +1,61 @@
+Firewall - Fortigate
+
+config system interface
+edit "port1"
+set vdom "root"
+set mode dhcp
+set allowaccess ping https ssh http fgfm
+set type physical
+set alias "WAN-Internet"
+next
+edit "port2"
+set vdom "root"
+set mode static
+set ip 192.168.10.1 255.255.255.0
+set allowaccess ping
+set type physical
+set alias "Zona-OT"
+next
+edit "port3"
+set vdom "root"
+set mode static
+set ip 192.168.20.1 255.255.255.0
+set allowaccess ping https http
+set type physical
+set alias "Supervision"
+next
+edit "port4"
+set vdom "root"
+set mode static
+set ip 192.168.4.1 255.255.255.0
+set allowaccess ping https http
+set type physical
+set alias "DMZ-Puente"
+next
+end
+
+config firewall policy
+edit 1
+set name "SUPERVISION-TO-DMZ"
+set srcintf "port3"
+set dstintf "port4"
+set action accept
+set srcaddr "all"
+set dstaddr "all"
+set schedule "always"
+set service "ALL"
+set logtraffic all
+next
+edit 2
+set name "DMZ-TO-WAN"
+set srcintf "port4"
+set dstintf "port1"
+set action accept
+set srcaddr "all"
+set dstaddr "all"
+set schedule "always"
+set service "ALL"
+set nat enable
+set logtraffic all
+next
+end

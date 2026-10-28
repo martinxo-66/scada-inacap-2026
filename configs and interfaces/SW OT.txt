@@ -1,0 +1,42 @@
+SW-OT
+
+
+hostname SW-OT
+!
+vlan 10
+name ZONA-OT
+!
+interface GigabitEthernet0/0
+description Conexión a FORTIGATE Port2 (Zona-OT)
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+interface GigabitEthernet0/1
+description Conexión a plc-central-1
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+interface GigabitEthernet0/2
+description Conexión a estanque-agua-1
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+interface GigabitEthernet0/3
+description Conexión a sensor-nivel-agua-1
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+interface GigabitEthernet1/0
+description Conexión a actuador-bomba-1
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+no ip http server
+no ip http secure-server
+!
+end
